@@ -1,84 +1,66 @@
-import socket
-import os
-import hashlib
-import pickle
+import ReliableUDPSocket
+import sys
 from time import sleep
-# 127.0.0.1 resolves to localhost or the same machine
-IP = "127.0.0.1"
-PORT = 12345
-HEADERSIZE = 32
-PACKET_SIZE = 512
 
-# AF_INET is an address family that is used to designate type of addresses that socket can communicate (IPv4 in this case)
-# SOCK_DGRAM is a datagram based protocol (UDP)
-server_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+PACKETSIZE = 2048
 
-# Bind, so that server informs the OS that it will be using the given IP and PORT
-server_socket.bind((IP, PORT))
-
-#Default parameter as Temp in case of any error in passing filename
-def validRequest(filename = "Temp"):
-    try:
-        if os.path.isfile(filename):
-            return True
-        else:
-            return False
-    except Exception as e:
-        print(str(e))
-        return False
-
-#This method will send and wait for an ACK by the client
-
-def get_packet(messgae,seqence_number):
-    #Generating Checksum for error detection
-    checksum = hashlib.sha256(messgae.encode('utf-8')).hexdigest()
-    #pickle.dumps return the pickled representation of the object obj as a bytes object, instead of writing it to a file.
-    return pickle.dumps([checksum,messgae,seqence_number])
-
-
-def send_file_to(client_address):
-    #First step is to send an ACK that we got the request
-    message = "OK"
-    packet = get_packet(message,0)
+def read_chunk(file, chunk_size = 512):
+   # Lazy function to read a file piece by piece 
     while True:
-        server_socket.sendto(packet,client_address)
-        #Sleep for 5 milliseconds
-        print("Messge sent to client!")
-        sleep(0.05)
-        reply, client_addr = server_socket.recvfrom(PACKET_SIZE)
-        # Recieved a reply from the same client
-        # There may be multiple request by this time on the socket
-        if client_addr == client_address:
-            if reply.decode('utf-8') == "OK":
-                print("OK!")
-                break
-        
+        data = file.read(chunk_size)
+        if not data:
+            break
+        yield data
 
+def sendfile(server_socket,filename,client_addr):
+    pkn = 1
+    # set the sequence number to 1 for 1st packet
+    server_socket.setseqN(1)
 
-# Listen indefinitely if there comes any request for a file
-while True:
-
-    try:
-        #The client will first send the file name.
-        #client_request will hold the file name.
-        #client_address will hold a tuple of client IP and PORT.
-
-        client_request, client_address = server_socket.recvfrom(HEADERSIZE)
-
-        print(f"Received request from {client_address}")
-        #Check is the file is present will the system
-        # if the file is found by the server then send an ACK if not send a NAK.
-        if client_request:
-            filename = client_request.decode('utf-8')
-            print(f"Requested file: {filename}")
-
-        # TODO: for now i have removed checking if file is present because of some error, I will later update this
-        if validRequest(filename) or True:
-            # an ACK with seqence number 0, and Ok messgae
-            send_file_to(client_address)
+    with open(filename,"r") as file:
+        for data in read_chunk(file):
+            print(f"packet: {pkn}")
+            print(data)
+            pkt = server_socket.makePacket(data)
+            while True:
+                server_socket.udp_socket.sendto(pkt,client_addr)
+                message, clientaddr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+                message = server_socket.unloadPacket(message)
+                if server_socket.check_packet(message) == 1 and client_addr == clientaddr:
+                    if message[1] == "ACK":
+                        break
+                sleep(0.005)
+            # Increment sequence number after every succesfull transfer
+            #server_socket.incrementseqN()
+            server_socket.flipseqN()
+            pkn += 1
     
+    # Finsing transfer
+    pkt = server_socket.makePacket("$$$")
+    #send 10 times if there is a packet loss
+    for i in range(1,10):
+        server_socket.udp_socket.sendto(pkt,client_addr)
+        message, clientaddr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+        message = server_socket.unloadPacket(message)
+        validity = server_socket.check_packet(message)
+        # validity == -1 beacuse we dont about sequence number
+        if validity == 1 or validity == -1 and client_addr == clientaddr:
+            if message[1] == "ACK":
+                break
+        sleep(0.005)
+    print("File Transfer finished!")
 
+def listen(server_socket):
+    while True:
+        file_req, client_addr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+        file_req = server_socket.unloadPacket(file_req)
+        if server_socket.check_packet(file_req) == 1:
+            sendfile(server_socket,file_req[1],client_addr)
+            break
 
-    except Exception as e:
-        print(str(e))
+if __name__ == "__main__":
 
+    server_socket = ReliableUDPSocket.ReliableUDPSocket()
+    server_socket.bind_socket("127.0.0.1",12345)
+    while True:
+        listen(server_socket)

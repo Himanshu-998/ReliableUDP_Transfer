@@ -1,46 +1,61 @@
-import socket
-import sys
-from time import sleep
-import pickle
-import hashlib
-#Fixed Headersize
-HEADERSIZE = 32
-PACKET_SIZE = 512
+import ReliableUDPSocket
 
-try:
-    req = sys.argv[1]
-except:
-    print("Fewer arguments passed to the program, Please enter the filename!")
-    req = input("Filename > ")
+PACKETSIZE = 2048
 
-client_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+def finisdownload(client_socket, server_addr):
 
-def decode_packet(packet):
-    #picle.loads return the reconstituted object hierarchy of the pickled representation bytes_object of an object.
-    return pickle.loads(packet)
+    for i in range(1,10):
+        pack = client_socket.makePacket("ACK")
+        client_socket.udp_socket.sendto(pack,server_addr)
+    
+    print("Download Finished.\n Closing connection with server.")
 
 
-#try:
+def download(client_socket,server_addr,file,target_file):
+    
+    # set the sequence number to 1 for 1st packet
+    client_socket.setseqN(1)
 
-while True:
-
-    client_socket.sendto(req.ljust(HEADERSIZE).encode('utf-8'),("127.0.0.1", 12345))
-    print("sent a req to server")
-    #wait for 5 milliseconds
-    sleep(0.05)
-
-    #Check for a reply on the Port
-    message, server_addr = client_socket.recvfrom(PACKET_SIZE)
-    print("RR")
-    message = decode_packet(message)
-    if message[1] == "OK":
-        if message[0] == hashlib.sha256(message[1].encode('utf-8')).hexdigest():
-            print("OK!")
+    #Number of times the client will send a request for file to server is set to 9 
+    request = 1
+    while request < 10:
+        packet = client_socket.makePacket(file)
+        client_socket.udp_socket.sendto(packet,server_addr)
+        message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
+        if not message:
+            request += 1
+        else:
+            #Discard this packet, Since we know server got our request and will send again the 1st packet
+            print("Request Accepted!")
             break
+    
+    if request == 10:
+        print("Unable to connect to the server! Please try again later...")
 
-client_socket.sendto(f"{req}".encode('utf-8'),("127.0.0.1", 1234))
+    else:
+        recv_file = open(target_file,"w")
+        while True:
+            message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
+            message = client_socket.unloadPacket(message)
+            if client_socket.check_packet(message) == 1:
+                print(message[1])
+                if message[1] == "$$$":
+                    print("File Received, Check current working directory.")
+                    finisdownload(client_socket,server_addr)
+                    break
+                recv_file.write(message[1])
+                reply_packet = client_socket.makePacket("ACK")
+                client_socket.upd_socket.sendto(reply_packet,serveraddr)
 
-#except Exception as e:
- #   print(str(e))
+                # Flip the sequence number to avoid saving same packet twice
+                client_socket.flipseqN()
+    return
 
-client_socket.close()
+if __name__ == "__main__":
+
+    client_socket = ReliableUDPSocket.ReliableUDPSocket()
+    client_socket.bind_socket("127.0.0.1",12346)
+    file = input("Filename > ")
+    target_file = input("Save as > ")
+    server_addr = ("127.0.0.1",12345)
+    download(client_socket,server_addr,file,target_file)
