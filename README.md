@@ -2,7 +2,7 @@
  Computer networks assignment to add reliability features over UDP protocol 
 
 
-The server is going in infinte wait after sending the 1st packet, Since client is not replying.
+The server is going in infinte wait (on recvfrom() method) after sending the 1st packet, Since client is not replying.
 
 This is happening because we have to use timeout instead of sleep method
 
