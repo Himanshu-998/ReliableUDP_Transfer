@@ -12,8 +12,9 @@ https://www.programcreek.com/python/example/3209/socket.recvfrom
 
 https://stackoverflow.com/questions/2719017/how-to-set-timeout-on-pythons-socket-recv-method
 
+```
 The typical approach is to use select() to wait until data is available or until the timeout occurs. Only call recv() when data is actually available.
-
+```
 
 ### Example code to use select method
 ```
