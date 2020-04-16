@@ -54,7 +54,7 @@ def download(client_socket,server_addr,file,target_file):
                     break
                 recv_file.write(message[1])
                 reply_packet = client_socket.makePacket("ACK")
-                client_socket.upd_socket.sendto(reply_packet,serveraddr)
+                client_socket.udp_socket.sendto(reply_packet,serveraddr)
 
                 # Flip the sequence number to avoid saving same packet twice
                 client_socket.flipseqN()
