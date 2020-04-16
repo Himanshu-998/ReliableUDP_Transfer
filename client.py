@@ -2,6 +2,9 @@ import ReliableUDPSocket
 
 PACKETSIZE = 2048
 
+
+#Send ACKs to server to transfer is complete.
+#multiple packets so if any packet losses, it will stop after 10 packets.
 def finisdownload(client_socket, server_addr):
 
     for i in range(1,10):
@@ -21,7 +24,10 @@ def download(client_socket,server_addr,file,target_file):
     while request < 10:
         packet = client_socket.makePacket(file)
         client_socket.udp_socket.sendto(packet,server_addr)
-        message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
+        try:
+            message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
+        except:
+            continue
         if not message:
             request += 1
         else:
@@ -35,7 +41,10 @@ def download(client_socket,server_addr,file,target_file):
     else:
         recv_file = open(target_file,"w")
         while True:
-            message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
+            try:
+                message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
+            except:
+                continue
             message = client_socket.unloadPacket(message)
             if client_socket.check_packet(message) == 1:
                 print(message[1])

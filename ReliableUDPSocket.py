@@ -16,6 +16,8 @@ class ReliableUDPSocket:
     # SOCK_DGRAM is a datagram based protocol (UDP)
     def __init__(self):
         self.udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        #set socket timeout for 10 milliseconds
+        self.udp_socket.settimeout(0.1)
         self.sequenceNumber = 1
 
     # Bind, so that server informs the OS that it will be using the given IP and PORT
@@ -41,10 +43,12 @@ class ReliableUDPSocket:
     # Each checksum is of 113 bytes
     def makePacket(self,message):
         # Unicode-objects must be encoded before hashing
+       # checksum = hashlib.sha256(message).hexdigest()
         checksum = hashlib.sha256(message.encode('utf-8')).hexdigest()
         packet =  pickle.dumps([checksum,message,self.sequenceNumber])
         return packet
 
+    #returns the Unpickled object
     def unloadPacket(self,packet):
         return pickle.loads(packet)
 
@@ -54,6 +58,7 @@ class ReliableUDPSocket:
     # else return -1
     def check_packet(self,packet):
         # if hashed data matches with given checksum we know it is valid
+        #if packet[0] == hashlib.sha256(packet[1]).hexdigest():
         if packet[0] == hashlib.sha256(packet[1].encode('utf-8')).hexdigest():
             if self.sequenceNumber == packet[2]:
                 return 1

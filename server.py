@@ -24,12 +24,14 @@ def sendfile(server_socket,filename,client_addr):
             pkt = server_socket.makePacket(data)
             while True:
                 server_socket.udp_socket.sendto(pkt,client_addr)
-                message, clientaddr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+                try:
+                    message, clientaddr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+                except:
+                    continue
                 message = server_socket.unloadPacket(message)
                 if server_socket.check_packet(message) == 1 and client_addr == clientaddr:
                     if message[1] == "ACK":
                         break
-                sleep(0.005)
             # Increment sequence number after every succesfull transfer
             #server_socket.incrementseqN()
             server_socket.flipseqN()
@@ -40,26 +42,31 @@ def sendfile(server_socket,filename,client_addr):
     #send 10 times if there is a packet loss
     for i in range(1,10):
         server_socket.udp_socket.sendto(pkt,client_addr)
-        message, clientaddr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+        try:
+            message, clientaddr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+        except:
+            continue
         message = server_socket.unloadPacket(message)
         validity = server_socket.check_packet(message)
         # validity == -1 beacuse we dont about sequence number
         if validity == 1 or validity == -1 and client_addr == clientaddr:
             if message[1] == "ACK":
                 break
-        sleep(0.005)
     print("File Transfer finished!")
 
+# The server keeps listening on the port for any incoming request
 def listen(server_socket):
     while True:
-        file_req, client_addr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+        try:
+            file_req, client_addr = server_socket.udp_socket.recvfrom(PACKETSIZE)
+        except:
+            continue
         file_req = server_socket.unloadPacket(file_req)
         if server_socket.check_packet(file_req) == 1:
             sendfile(server_socket,file_req[1],client_addr)
             break
 
 if __name__ == "__main__":
-
     server_socket = ReliableUDPSocket.ReliableUDPSocket()
     server_socket.bind_socket("127.0.0.1",12345)
     while True:
