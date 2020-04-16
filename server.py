@@ -17,7 +17,7 @@ def sendfile(server_socket,filename,client_addr):
     # set the sequence number to 1 for 1st packet
     server_socket.setseqN(1)
 
-    with open(filename,"r") as file:
+    with open(filename,"r",encoding = "utf-8") as file:
         for data in read_chunk(file):
             print(f"packet: {pkn}")
             print(data)
