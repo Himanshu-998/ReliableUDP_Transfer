@@ -43,8 +43,8 @@ class ReliableUDPSocket:
     # Each checksum is of 113 bytes
     def makePacket(self,message):
         # Unicode-objects must be encoded before hashing
-       # checksum = hashlib.sha256(message).hexdigest()
-        checksum = hashlib.sha256(message.encode('utf-8')).hexdigest()
+        checksum = hashlib.sha256(message).hexdigest()
+        #checksum = hashlib.sha256(message.encode('utf-8')).hexdigest()
         packet =  pickle.dumps([checksum,message,self.sequenceNumber])
         return packet
 
@@ -58,8 +58,8 @@ class ReliableUDPSocket:
     # else return -1
     def check_packet(self,packet):
         # if hashed data matches with given checksum we know it is valid
-        #if packet[0] == hashlib.sha256(packet[1]).hexdigest():
-        if packet[0] == hashlib.sha256(packet[1].encode('utf-8')).hexdigest():
+        if packet[0] == hashlib.sha256(packet[1]).hexdigest():
+        #if packet[0] == hashlib.sha256(packet[1].encode('utf-8')).hexdigest():
             if self.sequenceNumber == packet[2]:
                 return 1
             else:

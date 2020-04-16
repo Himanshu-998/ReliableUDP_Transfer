@@ -8,7 +8,7 @@ PACKETSIZE = 2048
 def finisdownload(client_socket, server_addr):
 
     for i in range(1,10):
-        pack = client_socket.makePacket("ACK")
+        pack = client_socket.makePacket("ACK".encode("utf-8"))
         client_socket.udp_socket.sendto(pack,server_addr)
     
     print("Download Finished.\n Closing connection with server.")
@@ -22,7 +22,7 @@ def download(client_socket,server_addr,file,target_file):
     #Number of times the client will send a request for file to server is set to 9 
     request = 1
     while request < 10:
-        packet = client_socket.makePacket(file)
+        packet = client_socket.makePacket(file.encode("utf-8"))
         client_socket.udp_socket.sendto(packet,server_addr)
         try:
             message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
@@ -39,7 +39,7 @@ def download(client_socket,server_addr,file,target_file):
         print("Unable to connect to the server! Please try again later...")
 
     else:
-        recv_file = open(target_file,"w")
+        recv_file = open(target_file,"wb")
         while True:
             try:
                 message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
@@ -48,12 +48,12 @@ def download(client_socket,server_addr,file,target_file):
             message = client_socket.unloadPacket(message)
             if client_socket.check_packet(message) == 1:
                 print(message[1])
-                if message[1] == "$$$":
+                if message[1] == "$$$".encode("utf-8"):
                     print("File Received, Check current working directory.")
                     finisdownload(client_socket,server_addr)
                     break
                 recv_file.write(message[1])
-                reply_packet = client_socket.makePacket("ACK")
+                reply_packet = client_socket.makePacket("ACK".encode("utf-8"))
                 client_socket.udp_socket.sendto(reply_packet,serveraddr)
 
                 # Flip the sequence number to avoid saving same packet twice
