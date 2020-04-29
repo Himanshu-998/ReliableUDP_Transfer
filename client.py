@@ -31,6 +31,8 @@ def download(client_socket,server_addr,file,target_file):
         # For more information look ReliableUDPSocket class
         packet = client_socket.makePacket(file.encode("utf-8"))
         client_socket.udp_socket.sendto(packet,server_addr)
+        # intilizing message as none
+        message = None
         try:
             message, serveraddr = client_socket.udp_socket.recvfrom(PACKETSIZE)
         except:
