@@ -4,7 +4,7 @@ from time import sleep
 
 PACKETSIZE = 2048
 
-def read_chunk(file, chunk_size = 512):
+def read_chunk(file, chunk_size = 1024):
    # Lazy function to read a file piece by piece 
     while True:
         data = file.read(chunk_size)
@@ -19,8 +19,8 @@ def sendfile(server_socket,filename,client_addr):
 
     with open(filename,"rb") as file:
         for data in read_chunk(file):
-            print(f"packet: {pkn}")
-            print(data)
+            #print(f"packet: {pkn}")
+            #print(data)
             pkt = server_socket.makePacket(data)
             while True:
                 server_socket.udp_socket.sendto(pkt,client_addr)

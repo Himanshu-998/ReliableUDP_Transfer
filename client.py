@@ -47,7 +47,7 @@ def download(client_socket,server_addr,file,target_file):
                 continue
             message = client_socket.unloadPacket(message)
             if client_socket.check_packet(message) == 1:
-                print(message[1])
+                #print(message[1])
                 if message[1] == "$$$".encode("utf-8"):
                     print("File Received, Check current working directory.")
                     finisdownload(client_socket,server_addr)

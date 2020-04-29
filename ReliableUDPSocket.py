@@ -17,7 +17,7 @@ class ReliableUDPSocket:
     def __init__(self):
         self.udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         #set socket timeout for 10 milliseconds
-        self.udp_socket.settimeout(0.1)
+        self.udp_socket.settimeout(0.01)
         self.sequenceNumber = 1
 
     # Bind, so that server informs the OS that it will be using the given IP and PORT
