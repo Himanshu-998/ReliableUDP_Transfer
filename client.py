@@ -1,5 +1,5 @@
 import ReliableUDPSocket
-
+import time
 PACKETSIZE = 2048
 
 
@@ -39,6 +39,8 @@ def download(client_socket,server_addr,file,target_file):
         print("Unable to connect to the server! Please try again later...")
 
     else:
+        tic = time.time()
+        toc = None
         recv_file = open(target_file,"wb")
         while True:
             try:
@@ -51,6 +53,8 @@ def download(client_socket,server_addr,file,target_file):
                 if message[1] == "$$$".encode("utf-8"):
                     print("File Received, Check current working directory.")
                     finisdownload(client_socket,server_addr)
+                    toc = time.time()
+                    print(f"Time taken for transfer: {int(toc - tic)}s.")
                     break
                 recv_file.write(message[1])
                 reply_packet = client_socket.makePacket("ACK".encode("utf-8"))
