@@ -20,4 +20,4 @@ python client.py
 `
 
 The file requested should be in same directory where sever.py is present
-![image]("readmeimg.png")
+![image]("https://github.com/Himanshu-998/ReliableUDP_Transfer/blob/master/readmeimg.PNG")
